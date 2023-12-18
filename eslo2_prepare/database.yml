@@ -1,0 +1,37 @@
+Databases:
+  # tell pyannote.database where to find AMI wav files.
+  # {uri} is a placeholder for the session name (eg. ES2004c).
+  # you might need to update this line to fit your own setup.
+  ESLO2: /path/to/eslo2_processed/audio/{uri}.wav
+  ESLO2Debug: /path/to/eslo2_processed/audio/{uri}.wav
+Protocols:
+  ESLO2:
+    SpeakerDiarization:
+      ESLO2:
+        train:
+            uri: /path/to/eslo2_processed/diarization/lists/train.txt
+            annotation: /path/to/eslo2_processed/diarization/rttms/train/{uri}.rttm
+            annotated: /path/to/eslo2_processed/diarization/uems/train/{uri}.uem
+        development:
+            uri: /path/to/eslo2_processed/diarization/lists/dev.txt
+            annotation: /path/to/eslo2_processed/diarization/rttms/dev/{uri}.rttm
+            annotated: /path/to/eslo2_processed/diarization/uems/dev/{uri}.uem
+        test:
+            uri: /path/to/eslo2_processed/diarization/lists/test.txt
+            annotation: /path/to/eslo2_processed/diarization/rttms/test/{uri}.rttm
+            annotated: /path/to/eslo2_processed/diarization/uems/test/{uri}.uem
+  ESLO2Debug:
+    SpeakerDiarization:
+      ESLO2Debug:
+        train:
+            uri: /path/to/eslo2_processed/diarization/lists/train.debug.txt
+            annotation: /path/to/eslo2_processed/diarization/rttms/train/{uri}.rttm
+            annotated: /path/to/eslo2_processed/diarization/uems/train/{uri}.uem
+        development:
+            uri: /path/to/eslo2_processed/diarization/lists/dev.debug.txt
+            annotation: /path/to/eslo2_processed/diarization/rttms/dev/{uri}.rttm
+            annotated: /path/to/eslo2_processed/diarization/uems/dev/{uri}.uem
+        test:
+            uri: /path/to/eslo2_processed/diarization/lists/test.debug.txt
+            annotation: /path/to/eslo2_processed/diarization/rttms/test/{uri}.rttm
+            annotated: /path/to/eslo2_processed/diarization/uems/test/{uri}.uem

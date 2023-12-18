@@ -1,0 +1,2 @@
+conda install -c conda-forge libsndfile ffmpeg sox 
+conda install -c "conda-forge/label/kenlm_dev" kenlm

@@ -1,0 +1,52 @@
+# dataset to use
+protocol: "ESLO2.SpeakerDiarization.ESLO2"
+# segmentation model to fine-tune (path or name on hugging face hub)
+segmentation: "pyannote/segmentation-3.0"
+# embedding model to use in diarization pipeline
+embedding: "hbredin/wespeaker-voxceleb-resnet34-LM"
+# clustering method to use in diarization pipeline
+# see pyannote.audio.pipelines.clustering.Clustering for available options
+# clustering: "HiddenMarkovModelClustering"
+clustering: "AgglomerativeClustering"
+# min number of speaker per recording
+min_nb_speakers: 2
+# max number of speaker per recording
+max_nb_speakers: 4
+# diarization pipeline hyperparameters initial values (will be optimzied)
+# (clustering params vary with the clustering method)
+initial_params_diar:  
+  segmentation:
+      min_duration_off: 0.0
+  clustering:
+    # single_cluster_detection:
+    #     quantile: 0.005
+    #     threshold: 0.7
+    # covariance_type: "spherical"
+    # threshold: 0.40
+    method: centroid
+    min_cluster_size: 12
+    threshold: 0.7045654963945799
+
+# segmentation model fine-tuning
+segmentation_training:
+  # number of epochs during segmentation model fine-tuning
+  nb_epochs: 50
+  # number of training epochs between each validation epoch during segmentation model fine-tuning
+  validate_period: 5
+  # learning rate for segmentation model fine-tuning
+  lr: 0.0001
+
+# diarization pipeline hyperparameters optimization
+diarization_optimization:
+  # number of iterations
+  nb_iters: 15
+  # pipeline hyperarameters to freeze
+  frozen_params: {
+    clustering: {
+      method: "centroid"
+    }
+  }
+  # sampling method to use
+  sampler: "TPESampler"
+  # pruning method to use
+  pruner: null

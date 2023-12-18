@@ -1,0 +1,28 @@
+click
+lxml
+networkx
+ortools
+pandas
+pqdm
+tensorboard
+torch
+torchaudio
+tqdm
+pyyaml
+
+
+# diarization
+pyannote-audio
+pyannote-database
+pyannote-metrics
+pytorch_lightning
+
+# transcription
+hyperpyyaml
+num2words
+pysrt
+speechbrain
+transformers
+
+
+# conda deps: libsndfile ffmpeg sox kenlm

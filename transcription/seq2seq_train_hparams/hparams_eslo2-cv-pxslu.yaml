@@ -1,0 +1,159 @@
+# directory where to save results (dataset csvs, checkpoints, logs, etc)
+output_dir: null  # must be provided as CLI arg
+# CommonVoice dir with fr/ subdir
+cv_dir: null  # must be provided as CLI arg
+# ESLO2 dir with .srt files generated from .trs and audio files
+eslo2_dir: null  # must be provided as CLI arg
+# PXSLU dir
+pxslu_dir: null  # must be provided as CLI arg
+# Proprotions of each dataset to use at each training epoch
+cv_subset: 0.1
+eslo2_subset: 1.0
+pxslu_subset: 1.0
+# pretrained tokenizer and rnnlm
+pretrained_tokenizer_file: null  # must be provided as CLI arg
+pretrained_rnnlm_file: null  # must be provided as CLI arg
+
+# for debugging purposes
+max_nb_samples: null
+train_on_valid: False
+
+nb_epochs: 20
+nb_ctc_epochs: 10
+ctc_loss_weight: 0.3
+lr_asr: 1.0
+lr_wav2vec2: 0.0001
+ckpt_interval_minutes: 15
+
+max_batch_length: 90
+nb_batch_buckets: 30
+batch_ordering: random
+nb_data_workers: 6
+
+spec_augment_speeds: [95, 100, 110]
+
+# modules params
+# (nb_tokens, blank_index, bos_index and eos_index must be constistent with
+# pretrained tokenizer)
+nb_tokens: 500
+blank_index: 0
+bos_index: 1
+eos_index: 2
+sample_rate: 16000
+wav2vec2_hub: LeBenchmark/wav2vec2-FR-7K-large
+wav2vec_output_dim: 1024
+nb_enc_neurons: 1024
+enc_drop_out: 0.25
+dec_drop_out: 0.25
+emb_size: 128
+nb_dec_neurons: 1024
+
+# beam search params
+min_decode_ratio: 0.0
+max_decode_ratio: 1.0
+beam_size: 20
+eos_threshold: 1.5
+using_max_attn_shift: True
+max_attn_shift: 140
+temperature: 1.50
+
+## modules
+
+tokenizer: !new:sentencepiece.SentencePieceProcessor
+
+wav2vec2: !new:speechbrain.lobes.models.huggingface_wav2vec.HuggingFaceWav2Vec2
+    source: !ref <wav2vec2_hub>
+    output_norm: True
+    freeze: False
+    save_path: !ref <output_dir>/wav2vec2_checkpoint
+
+enc: !new:speechbrain.nnet.containers.Sequential
+    input_shape: [null, null, !ref <wav2vec_output_dim>]
+    linear1: !name:speechbrain.nnet.linear.Linear
+        n_neurons: !ref <nb_enc_neurons>
+        bias: True
+    bn1: !name:speechbrain.nnet.normalization.BatchNorm1d
+    activation: !new:torch.nn.LeakyReLU
+    drop: !new:torch.nn.Dropout
+        p: !ref <enc_drop_out>
+    linear2: !name:speechbrain.nnet.linear.Linear
+        n_neurons: !ref <nb_enc_neurons>
+        bias: True
+    bn2: !name:speechbrain.nnet.normalization.BatchNorm1d
+    activation2: !new:torch.nn.LeakyReLU
+    drop2: !new:torch.nn.Dropout
+        p: !ref <enc_drop_out>
+
+ctc_lin: !new:speechbrain.nnet.linear.Linear
+    input_size: !ref <nb_enc_neurons>
+    n_neurons: !ref <nb_tokens>
+
+seq_lin: !new:speechbrain.nnet.linear.Linear
+    input_size: !ref <nb_dec_neurons>
+    n_neurons: !ref <nb_tokens>
+
+emb: !new:speechbrain.nnet.embedding.Embedding
+    num_embeddings: !ref <nb_tokens>
+    embedding_dim: !ref <emb_size>
+
+dec: !new:speechbrain.nnet.RNN.AttentionalRNNDecoder
+    enc_dim: !ref <nb_enc_neurons>
+    input_size: !ref <emb_size>
+    rnn_type: gru
+    attn_type: location
+    hidden_size: !ref <nb_dec_neurons>
+    attn_dim: !ref <nb_dec_neurons>
+    num_layers: 1
+    scaling: 1.0
+    channels: 10
+    kernel_size: 100
+    re_init: True
+    dropout: !ref <dec_drop_out>
+
+# beam search
+beam_searcher: !new:speechbrain.decoders.S2SRNNBeamSearcher
+    embedding: !ref <emb>
+    decoder: !ref <dec>
+    linear: !ref <seq_lin>
+    ctc_linear: !ref <ctc_lin>
+    bos_index: !ref <bos_index>
+    eos_index: !ref <eos_index>
+    blank_index: !ref <blank_index>
+    min_decode_ratio: !ref <min_decode_ratio>
+    max_decode_ratio: !ref <max_decode_ratio>
+    beam_size: !ref <beam_size>
+    eos_threshold: !ref <eos_threshold>
+    using_max_attn_shift: !ref <using_max_attn_shift>
+    max_attn_shift: !ref <max_attn_shift>
+    temperature: !ref <temperature>
+
+# optimizers and schedulers
+asr_optimizer: !name:torch.optim.Adadelta
+    lr: !ref <lr_asr>
+    rho: 0.95
+    eps: 1.e-8
+
+wav2vec2_optimizer: !name:torch.optim.Adam
+    lr: !ref <lr_wav2vec2>
+
+asr_scheduler: !new:speechbrain.nnet.schedulers.NewBobScheduler
+    initial_value: !ref <lr_asr>
+    improvement_threshold: 0.0025
+    annealing_factor: 0.8
+    patient: 0
+
+wav2vec2_scheduler: !new:speechbrain.nnet.schedulers.NewBobScheduler
+    initial_value: !ref <lr_wav2vec2>
+    improvement_threshold: 0.0025
+    annealing_factor: 0.9
+    patient: 0
+
+# pretraining
+asr_model: !new:torch.nn.ModuleList
+    - [!ref <enc>, !ref <ctc_lin>]
+
+pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
+    loadables:
+        tokenizer: !ref <tokenizer>
+    paths:
+        tokenizer: !ref <pretrained_tokenizer_file>

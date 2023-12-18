@@ -1,0 +1,71 @@
+ckpt_dir: null # to override
+
+# modules params
+# (nb_tokens, blank_index, bos_index and eos_index must be constistent with
+# pretrained tokenizer)
+nb_tokens: 500
+blank_index: 0
+sample_rate: 16000
+wav2vec2_hub: LeBenchmark/wav2vec2-FR-7K-large
+wav2vec_output_dim: 1024
+nb_enc_neurons: 1024
+enc_drop_out: 0.25
+
+## modules
+
+tokenizer: !new:sentencepiece.SentencePieceProcessor
+
+wav2vec2: !new:speechbrain.lobes.models.huggingface_wav2vec.HuggingFaceWav2Vec2
+    source: !ref <wav2vec2_hub>
+    output_norm: True
+    freeze: True
+    save_path: !ref  <ckpt_dir>/wav2vec2_checkpoint
+
+enc: !new:speechbrain.nnet.containers.Sequential
+    input_shape: [null, null, !ref <wav2vec_output_dim>]
+    linear1: !name:speechbrain.nnet.linear.Linear
+        n_neurons: !ref <nb_enc_neurons>
+        bias: True
+    bn1: !name:speechbrain.nnet.normalization.BatchNorm1d
+    activation: !new:torch.nn.LeakyReLU
+    drop: !new:torch.nn.Dropout
+        p: !ref <enc_drop_out>
+    linear2: !name:speechbrain.nnet.linear.Linear
+        n_neurons: !ref <nb_enc_neurons>
+        bias: True
+    bn2: !name:speechbrain.nnet.normalization.BatchNorm1d
+    activation2: !new:torch.nn.LeakyReLU
+    drop2: !new:torch.nn.Dropout
+        p: !ref <enc_drop_out>
+    linear3: !name:speechbrain.nnet.linear.Linear
+        n_neurons: !ref <nb_enc_neurons>
+        bias: True
+    bn3: !name:speechbrain.nnet.normalization.BatchNorm1d
+    activation3: !new:torch.nn.LeakyReLU
+
+ctc_lin: !new:speechbrain.nnet.linear.Linear
+    input_size: !ref <nb_enc_neurons>
+    n_neurons: !ref <nb_tokens>
+
+decoding_function: !name:speechbrain.decoders.ctc_greedy_decode
+    blank_id: !ref <blank_index>
+
+encoder: !new:speechbrain.nnet.containers.LengthsCapableSequential
+  wav2vec2: !ref <wav2vec2>
+  enc: !ref <enc>
+  ctc_lin: !ref <ctc_lin>
+
+modules:
+  encoder: !ref <encoder>
+
+pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
+  loadables:
+    wav2vec2: !ref <wav2vec2>
+    enc: !ref <enc>
+    ctc_lin: !ref <ctc_lin>
+    tokenizer: !ref <tokenizer>
+  paths:
+    wav2vec2: !ref <ckpt_dir>/wav2vec2.ckpt
+    enc: !ref <ckpt_dir>/enc.ckpt
+    ctc_lin: !ref <ckpt_dir>/ctc_lin.ckpt
+    tokenizer: !ref <ckpt_dir>/tokenizer.ckpt

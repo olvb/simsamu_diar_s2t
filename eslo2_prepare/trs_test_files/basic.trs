@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Trans scribe="Asceline Goudjo" audio_filename="ESLO2_cin_09_02" version="10" version_date="140109" elapsed_time="0">
+    <Speakers>
+        <Speaker id="spk1" name="TM387" check="no" dialect="native" accent="" scope="local"/>
+        <Speaker id="spk2" name="WK960" check="no" dialect="native" accent="" scope="local"/>
+    </Speakers>
+    <Episode program="" air_date="">
+        <Section type="report" startTime="0" endTime="10.314">
+
+            <Turn startTime="0" endTime="9.876" speaker="spk1">
+                <Sync time="0"/>
+                bonjour 
+                <Sync time="1.109"/>
+                en fait on est étudiantes à la fac
+                <Sync time="5.871"/>
+                bah on a juste quelques questions ça vous intéresse ?
+                <Sync time="9.256"/>
+            </Turn>
+
+            <Turn speaker="spk1 spk2" startTime="9.876" endTime="10.314">
+                <Sync time="9.876"/>
+                <Who nb="1"/>
+                OK?
+                <Who nb="2"/>
+                D'accord
+            </Turn>
+
+        </Section>
+    </Episode>
+</Trans>

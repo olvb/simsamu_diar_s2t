@@ -1,0 +1,70 @@
+# directory where to save results (dataset csvs, checkpoints, logs, etc)
+output_dir: null  # must be provided as CLI arg
+# CommonVoice dir with fr/ subdir
+cv_dir: null  # must be provided as CLI arg
+# ESLO2 dir with .srt files generated from .trs
+eslo2_dir: null  # must be provided as CLI arg
+# PXSLU dir
+pxslu_dir: null  # must be provided as CLI arg
+# OpenSubtitles dir with .txt files generated from .srts
+os_dir: null  # must be provided as CLI arg
+# Proportion of Open Subtiles .txt files to use
+os_subset: 1.0
+# pretrained tokenizer
+pretrained_tokenizer_file: null  # must be provided as CLI arg
+
+# for debugging purposes
+max_nb_samples: null
+train_on_valid: False
+
+nb_epochs: 10
+lr: 0.001
+ckpt_interval_minutes: 15
+
+batch_size: 512
+max_nb_tokens: 200
+nb_data_workers: 6
+
+## module params
+# (nb_tokens, blank_index, bos_index and eos_index must be constistent with
+# pretrained tokenizer)
+nb_tokens: 500
+blank_index: 0 
+bos_index: 1
+eos_index: 2
+embedding_size: 128
+drop_out: 0.3
+nb_layers: 2
+
+## modules
+
+tokenizer: !new:sentencepiece.SentencePieceProcessor
+
+lm: !new:speechbrain.lobes.models.RNNLM.RNNLM
+  output_neurons: !ref <nb_tokens>
+  embedding_dim: !ref <embedding_size>
+  activation: !name:torch.nn.LeakyReLU
+  dropout: !ref <drop_out>
+  rnn_layers: !ref <nb_layers>
+  rnn_neurons: 2048
+  dnn_blocks: 1
+  dnn_neurons: 512
+
+# optimizer and scheduler
+optimizer: !name:torch.optim.Adam
+    lr: !ref <lr>
+    betas: (0.9, 0.98)
+    eps: 0.000000001
+
+scheduler: !new:speechbrain.nnet.schedulers.NewBobScheduler
+    initial_value: !ref <lr>
+    improvement_threshold: 0.0025
+    annealing_factor: 0.8
+    patient: 0
+
+# pretrainer (helps loading potentially pretrained modules)
+pretrainer: !new:speechbrain.utils.parameter_transfer.Pretrainer
+    loadables:
+        tokenizer: !ref <tokenizer>
+    paths:
+        tokenizer: !ref <pretrained_tokenizer_file>
